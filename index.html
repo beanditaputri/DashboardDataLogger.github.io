@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Data Logger</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body class="dashboard-body">
+  <div id="dashboardPage" class="dashboard-page">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo">
+        <img src="filtrona-logo1.png" alt="logo">
+      </div>
+
+      <div class="menu-item active" onclick="switchView('home')">
+        <span class="material-symbols-outlined">home</span> Home
+      </div>
+      <div class="menu-item" onclick="switchView('elitech')">
+        <span class="material-symbols-outlined">thermometer</span> Elitech
+      </div>
+      <div class="menu-item" onclick="switchView('eplus')">
+        <span class="material-symbols-outlined">memory</span> E+Elektronik
+      </div>
+      <div class="menu-item" onclick="switchView('benetech')">
+        <span class="material-symbols-outlined">sensors</span> Benetech
+      </div>
+
+      <!-- Shared filter controls -->
+      <div id="filterControls" class="filter-controls" style="display:none;">
+        <div class="filter-row">
+          <select id="categoryFilter" class="btn-filter" onchange="onCategoryFilterChange()">
+            <option value="">Pilih</option>
+          </select>
+        </div>
+
+        <div class="filter-row">
+          <select
+            id="timeFilter"
+            class="btn-filter"
+            multiple
+            onchange="updateDashboard()"
+            title="Tahan Ctrl untuk memilih banyak jam"
+          >
+            <option value="07:00:00">07.00</option>
+            <option value="08:00:00">08.00</option>
+            <option value="09:00:00">09.00</option>
+            <option value="10:00:00">10.00</option>
+            <option value="11:00:00">11.00</option>
+            <option value="12:00:00">12.00</option>
+            <option value="13:00:00">13.00</option>
+            <option value="14:00:00">14.00</option>
+            <option value="15:00:00">15.00</option>
+            <option value="16:00:00">16.00</option>
+            <option value="17:00:00">17.00</option>
+            <option value="18:00:00">18.00</option>
+            <option value="19:00:00">19.00</option>
+            <option value="20:00:00">20.00</option>
+            <option value="21:00:00">21.00</option>
+            <option value="22:00:00">22.00</option>
+            <option value="23:00:00">23.00</option>
+            <option value="00:00:00">00.00</option>
+            <option value="01:00:00">01.00</option>
+            <option value="02:00:00">02.00</option>
+            <option value="03:00:00">03.00</option>
+            <option value="04:00:00">04.00</option>
+            <option value="05:00:00">05.00</option>
+            <option value="06:00:00">06.00</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+      <div class="calendar-widget">
+        <div class="calendar-header">
+          <select id="monthSelect" onchange="updateDashboard()">
+            <option value="0">Januari</option>
+            <option value="1">Februari</option>
+            <option value="2">Maret</option>
+            <option value="3">April</option>
+            <option value="4">Mei</option>
+            <option value="5">Juni</option>
+            <option value="6">Juli</option>
+            <option value="7">Agustus</option>
+            <option value="8">September</option>
+            <option value="9">Oktober</option>
+            <option value="10">November</option>
+            <option value="11">Desember</option>
+          </select>
+          <select id="yearSelect" onchange="updateDashboard()">
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+            <option value="2031">2031</option>
+            <option value="2032">2032</option>
+            <option value="2033">2033</option>
+            <option value="2034">2034</option>
+            <option value="2035">2035</option>
+            <option value="2036">2036</option>
+            <option value="2037">2037</option>
+            <option value="2038">2038</option>
+            <option value="2039">2039</option>
+            <option value="2040">2040</option>
+            <option value="2050">2050</option>
+          </select>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+
+      <button id="btnExport" class="export-btn" style="display:none;" onclick="exportToExcel()">
+        Export Data
+      </button>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+      <div class="header-title">DASHBOARD DATA LOGGER</div>
+
+      <!-- Home -->
+      <div id="homeView" class="view-section active">
+        <div class="home-layout">
+          <div class="home-left">
+            <div class="card welcome-card">
+              <h2>SELAMAT DATANG!</h2>
+              <p>
+                Dashboard ini dirancang untuk memvisualisasikan hasil studi pemantauan suhu (Temperature) dan
+                kelembapan (Humidity) dari beberapa perangkat data logger, yaitu <strong>Elitech</strong>,
+                <strong>E+Elektronik</strong>, dan <strong>Benetech</strong>. Dashboard ini membantu tim Quality
+                Control dalam menganalisis stabilitas kondisi lingkungan, membandingkan hasil pencatatan dari
+                berbagai sumber data, mengidentifikasi fluktuasi ekstrem, dan memastikan standar penyimpanan
+                objek studi tetap terjaga sesuai parameter yang ditentukan.
+              </p>
+            </div>
+
+            <div class="location-section multi-location-section">
+              <div class="location-card">
+                <div class="location-card-header">
+                  <span class="material-symbols-outlined">location_on</span>
+                  <span>Lokasi Elitech</span>
+                </div>
+
+                <div class="location-list">
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">science</span>
+                    <span>Lab QC</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">apartment</span>
+                    <span>Ruang PZ Central</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                    <span>Lemari Retained Sample Capsule</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="location-card">
+                <div class="location-card-header">
+                  <span class="material-symbols-outlined">location_on</span>
+                  <span>Lokasi E+Elektronik</span>
+                </div>
+
+                <div class="location-list">
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>AS-07</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">inventory</span>
+                    <span>Capsule DDS</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>KS-08</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">science</span>
+                    <span>QC Lab</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>SL-02</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                    <span>WH Loading FG</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>TH-07</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="location-card">
+                <div class="location-card-header">
+                  <span class="material-symbols-outlined">location_on</span>
+                  <span>Lokasi Benetech</span>
+                </div>
+
+                <div class="location-list">
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>ND-03</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>ND-04</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    <span>Self Inspection 1</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    <span>Self Inspection 2</span>
+                  </div>
+
+                  <div class="location-item-modern">
+                    <span class="material-symbols-outlined">place</span>
+                    <span>SM-07</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-right">
+            <div class="card card-guide">
+              <h2>Panduan Penggunaan</h2>
+
+              <div class="guide-list">
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">dashboard</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Navigasi Halaman</h4>
+                    <p>Gunakan menu <strong>Home</strong>, <strong>Elitech</strong>, <strong>E+Elektronik</strong>, dan <strong>Benetech</strong> di sidebar untuk berpindah antar halaman.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">tune</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Pilih Kategori</h4>
+                    <p>Setiap halaman data memiliki dropdown kategori berbeda. Pilih kategori terlebih dahulu agar data Temperature dan Humidity dapat ditampilkan.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">schedule</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Filter Waktu</h4>
+                    <p>Gunakan filter jam untuk memilih satu atau beberapa waktu pengukuran. Tahan tombol <strong>Ctrl</strong> untuk memilih lebih dari satu jam.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Filter Tanggal</h4>
+                    <p>Pilih tanggal pada kalender untuk menampilkan data sesuai hari yang diinginkan. Tanggal dapat dipilih hingga <strong>25 hari</strong>.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">date_range</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Filter Bulan dan Tahun</h4>
+                    <p>Atur bulan dan tahun pada kalender agar data yang dianalisis sesuai dengan periode yang dipilih pada menu <strong>Elitech</strong>, <strong>E+Elektronik</strong>, dan <strong>Benetech</strong>.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">analytics</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Ringkasan Scorecard</h4>
+                    <p>Scorecard menampilkan nilai <strong>rata-rata (Avg)</strong>, <strong>maksimum (Max)</strong>, dan <strong>minimum (Min)</strong> untuk Temperature dan Humidity berdasarkan filter aktif.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">monitoring</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Analisis Grafik</h4>
+                    <p>Grafik menampilkan data <strong>Temperature</strong> dan <strong>Humidity</strong> sesuai page serta kategori yang dipilih. Pada page <strong>Elitech</strong>, grafik juga menampilkan pembanding <strong>E+Elektronik</strong>.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">table_view</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Tabel Summary</h4>
+                    <p>Pada setiap page, menampilkan tabel ringkasan data Temperature dan Humidity berdasarkan filter aktif.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">open_in_new</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Open Google Sheet</h4>
+                    <p>Klik tombol <strong>Open Google Sheet</strong> untuk membuka sumber data Temperature atau Humidity.</p>
+                  </div>
+                </div>
+
+                <div class="guide-item">
+                  <div class="guide-icon">
+                    <span class="material-symbols-outlined">download</span>
+                  </div>
+                  <div class="guide-content">
+                    <h4>Export Data</h4>
+                    <p>Klik tombol <strong>Export Data</strong> untuk mengunduh hasil data yang sudah difilter ke dalam format Excel.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared analytics page -->
+      <div id="dataView" class="view-section">
+        <div class="scorecards">
+          <div class="scorecard">Avg. Temp<br><span id="avgTemp">... °C</span></div>
+          <div class="scorecard">Max. Temp<br><span id="maxTemp">... °C</span></div>
+          <div class="scorecard">Min. Temp<br><span id="minTemp">... °C</span></div>
+          <div class="scorecard">Avg. Hum<br><span id="avgHum">... %RH</span></div>
+          <div class="scorecard">Max. Hum<br><span id="maxHum">... %RH</span></div>
+          <div class="scorecard">Min. Hum<br><span id="minHum">... %RH</span></div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-column">
+            <div class="chart-header-row">
+              <div class="chart-title-box" id="tempTitleBox">Temperature</div>
+              <button class="sheet-btn" onclick="openGoogleSheetTemp()">Open Google Sheet</button>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="tempChart"></canvas>
+              <div id="tempChartEmpty" class="chart-empty" style="display:none;">
+                No Temperature data for the selected filters.
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-column">
+            <div class="chart-header-row">
+              <div class="chart-title-box" id="humTitleBox">Humidity</div>
+              <button class="sheet-btn" onclick="openGoogleSheetHum()">Open Google Sheet</button>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="humChart"></canvas>
+              <div id="humChartEmpty" class="chart-empty" style="display:none;">
+                No Humidity data for the selected filters.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-tables">
+          <div class="data-table-wrapper">
+            <h4 id="tempSummaryTitle">Summary Temperature</h4>
+            <table id="tempTable" class="data-table">
+              <thead id="tempTableHead"></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="data-table-wrapper">
+            <h4 id="humSummaryTitle">Summary Humidity</h4>
+            <table id="humTable" class="data-table">
+              <thead id="humTableHead"></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // SOURCE CONFIG
+    // =========================
+    const DATA_SOURCES = {
+      elitech: {
+        pageTitle: 'Elitech',
+        filterPlaceholder: 'Pilih Elitech',
+        categories: [
+          '1','2','3','4','5','6','7','8','9','10','11','12','13'
+        ],
+        tempUrl: 'https://docs.google.com/spreadsheets/d/1lrpLeQxIfNXjO7UOconN-yPz-wtv6hZY1et0MEZhF1Y/edit',
+        humUrl: 'https://docs.google.com/spreadsheets/d/16CC38SywIaHEdz5j21ErkyHcisS4VXyztNt06L8E2wY/edit',
+        getTempSheetCandidates: (category) => [`Elitech${category}_Temp`],
+        getHumSheetCandidates: (category) => [`Elitech${category}_Hum`]
+      },
+
+      eplus: {
+        pageTitle: 'E+Elektronik',
+        filterPlaceholder: 'Pilih E+Elektronik',
+        categories: [
+          'AS-07',
+          'Capsule DDS',
+          'KS-08',
+          'QC Lab',
+          'SL-02',
+          'WH Loading FG',
+          'TH-07'
+        ],
+        tempUrl: 'https://docs.google.com/spreadsheets/d/1GJSLxk4sdu6PqjgUoyloT_XL6pQ4_qUBp3RQssiHdpM/edit',
+        humUrl: 'https://docs.google.com/spreadsheets/d/1TDzHjT1lCRT9p5FpuZnpwAIX1OwSGfT3OAWl-mSygfI/edit',
+        getTempSheetCandidates: (category) => [
+          `${category}_Temp`, `${category} Temp`, category, 'Temperature', 'Temp'
+        ],
+        getHumSheetCandidates: (category) => [
+          `${category}_Hum`, `${category} Hum`, category, 'Humidity', 'Hum'
+        ]
+      },
+
+      benetech: {
+        pageTitle: 'Benetech',
+        filterPlaceholder: 'Pilih Benetech',
+        categories: [
+          'ND-03',
+          'ND-04',
+          'Self Inspection 1',
+          'Self Inspection 2',
+          'SM-07'
+        ],
+        tempUrl: 'https://docs.google.com/spreadsheets/d/1cDR1Dg8qPZncedFT6bXZWrcfphJgGCF3aC2VgUnIi88/edit',
+        humUrl: 'https://docs.google.com/spreadsheets/d/1d3ogIE6v2feAV2wJjik1TLw8vZr_rtDNLiAe-dlgQJg/edit',
+        getTempSheetCandidates: (category) => [
+          `${category}_Temp`, `${category} Temp`, category, 'Temperature', 'Temp'
+        ],
+        getHumSheetCandidates: (category) => [
+          `${category}_Hum`, `${category} Hum`, category, 'Humidity', 'Hum'
+        ]
+      }
+    };
+
+    let currentView = 'home';
+    let rawTempData = [];
+    let rawHumData = [];
+    let selectedDays = [];
+    let chartTemp = null;
+    let chartHum = null;
+
+    const TIME_FILTER_MODE = 'hour';
+
+    function pad2(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function getCurrentConfig() {
+      return DATA_SOURCES[currentView] || null;
+    }
+
+    function isElitechView() {
+      return currentView === 'elitech';
+    }
+
+    function toHourBucket(timeHHMMSS) {
+      const s = String(timeHHMMSS || '').trim();
+      if (!s) return '';
+      const hh = s.split(':')[0] || '';
+      return hh ? `${String(hh).padStart(2, '0')}:00:00` : '';
+    }
+
+    function normalizeTimeForFilter(timeHHMMSS) {
+      const s = String(timeHHMMSS || '').trim();
+      if (!s) return '';
+      return TIME_FILTER_MODE === 'hour' ? toHourBucket(s) : s;
+    }
+
+    function matchesSelectedTimes(timeHHMMSS, selectedTimeValues) {
+      if (!Array.isArray(selectedTimeValues) || selectedTimeValues.length === 0) return true;
+      return selectedTimeValues.includes(normalizeTimeForFilter(timeHHMMSS));
+    }
+
+    function switchView(view) {
+      currentView = view;
+
+      document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+
+      const activeMenu = document.querySelector(`.menu-item[onclick="switchView('${view}')"]`);
+      if (activeMenu) activeMenu.classList.add('active');
+
+      if (view === 'home') {
+        document.getElementById('homeView').classList.add('active');
+        document.getElementById('filterControls').style.display = 'none';
+        document.getElementById('btnExport').style.display = 'none';
+      } else {
+        document.getElementById('dataView').classList.add('active');
+        document.getElementById('filterControls').style.display = 'flex';
+        document.getElementById('btnExport').style.display = 'block';
+        setupCategoryFilter();
+        updateDataTitles();
+        rawTempData = [];
+        rawHumData = [];
+        updateDashboard();
+      }
+
+      initCalendar();
+    }
+
+    function updateDataTitles() {
+      const cfg = getCurrentConfig();
+      if (!cfg) return;
+
+      document.getElementById('tempTitleBox').textContent = `${cfg.pageTitle} Temperature`;
+      document.getElementById('humTitleBox').textContent = `${cfg.pageTitle} Humidity`;
+      document.getElementById('tempSummaryTitle').textContent = `Summary Temperature`;
+      document.getElementById('humSummaryTitle').textContent = `Summary Humidity`;
+
+      const tempHead = document.getElementById('tempTableHead');
+      const humHead = document.getElementById('humTableHead');
+
+      if (isElitechView()) {
+        tempHead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Kategori</th>
+            <th>E+Elektronik</th>
+            <th>Temperature</th>
+            <th>Correction</th>
+          </tr>
+        `;
+
+        humHead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Kategori</th>
+            <th>E+Elektronik</th>
+            <th>Humidity</th>
+            <th>Correction</th>
+          </tr>
+        `;
+      } else {
+        tempHead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Kategori</th>
+            <th>Temperature</th>
+          </tr>
+        `;
+
+        humHead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Kategori</th>
+            <th>Humidity</th>
+          </tr>
+        `;
+      }
+    }
+
+    function setupCategoryFilter() {
+      const cfg = getCurrentConfig();
+      const select = document.getElementById('categoryFilter');
+      if (!cfg || !select) return;
+
+      select.innerHTML = `<option value="">${cfg.filterPlaceholder}</option>` +
+        cfg.categories.map(cat => `<option value="${cat}">${displayCategory(cat)}</option>`).join('');
+    }
+
+    function displayCategory(value) {
+      if (currentView === 'elitech') return `Elitech ${value}`;
+      return value;
+    }
+
+    function initCalendar() {
+      const grid = document.getElementById('calendarGrid');
+      if (!grid) return;
+
+      grid.innerHTML = '';
+
+      const today = new Date();
+      const currentDay = today.getDate();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+
+      if (currentView === 'home') {
+        document.getElementById('monthSelect').value = currentMonth;
+        document.getElementById('yearSelect').value = currentYear;
+        selectedDays = [currentDay];
+      }
+
+      for (let i = 1; i <= 31; i++) {
+        const div = document.createElement('div');
+        div.className = 'calendar-day';
+        div.innerText = i;
+
+        if (selectedDays.includes(i)) div.classList.add('selected');
+
+        div.onclick = () => {
+          if (currentView !== 'home') toggleDaySelection(div, i);
+        };
+
+        grid.appendChild(div);
+      }
+    }
+
+    function toggleDaySelection(element, day) {
+      if (selectedDays.includes(day)) {
+        selectedDays = selectedDays.filter(d => d !== day);
+        element.classList.remove('selected');
+      } else {
+        if (selectedDays.length < 25) {
+          selectedDays.push(day);
+          element.classList.add('selected');
+        } else {
+          alert("Kamu hanya dapat memilih maksimal 25 hari secara bersamaan.");
+        }
+      }
+      updateDashboard();
+    }
+
+    function initCharts() {
+      if (chartTemp) chartTemp.destroy();
+      if (chartHum) chartHum.destroy();
+
+      const tempCanvas = document.getElementById('tempChart');
+      const humCanvas = document.getElementById('humChart');
+      if (!tempCanvas || !humCanvas) return;
+
+      const ctxTemp = tempCanvas.getContext('2d');
+      const ctxHum = humCanvas.getContext('2d');
+
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
+            }
+          },
+          y: {
+            beginAtZero: false
+          }
+        }
+      };
+
+      chartTemp = new Chart(ctxTemp, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: commonOptions
+      });
+
+      chartHum = new Chart(ctxHum, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: commonOptions
+      });
+    }
+
+    async function onCategoryFilterChange() {
+      const selectedCategory = document.getElementById('categoryFilter').value;
+
+      if (!selectedCategory) {
+        rawTempData = [];
+        rawHumData = [];
+        updateDashboard();
+        return;
+      }
+
+      try {
+        await loadAllDataForCurrentPage(selectedCategory);
+      } catch (error) {
+        console.error('Gagal memuat data sheet:', error);
+        rawTempData = [];
+        rawHumData = [];
+      }
+
+      updateDashboard();
+    }
+
+    async function loadAllDataForCurrentPage(category) {
+      const cfg = getCurrentConfig();
+      if (!cfg) return;
+
+      const [tempRows, humRows] = await Promise.all([
+        fetchGoogleSheetRowsMultiTry(cfg.tempUrl, {
+          type: 'temp',
+          sheetCandidates: cfg.getTempSheetCandidates(category),
+          defaultCategory: category
+        }),
+        fetchGoogleSheetRowsMultiTry(cfg.humUrl, {
+          type: 'hum',
+          sheetCandidates: cfg.getHumSheetCandidates(category),
+          defaultCategory: category
+        })
+      ]);
+
+      rawTempData = tempRows;
+      rawHumData = humRows;
+    }
+
+    async function fetchGoogleSheetRowsMultiTry(sheetUrl, options = {}) {
+      const {
+        type = 'temp',
+        sheetCandidates = [],
+        defaultCategory = ''
+      } = options;
+
+      const uniqueCandidates = Array.from(new Set((sheetCandidates || []).filter(Boolean)));
+      let lastError = null;
+
+      for (const sheet of uniqueCandidates) {
+        try {
+          const rows = await fetchGoogleSheetRows(sheetUrl, {
+            type,
+            sheet,
+            defaultCategory
+          });
+
+          if (rows.length) return rows;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      try {
+        return await fetchGoogleSheetRows(sheetUrl, {
+          type,
+          defaultCategory
+        });
+      } catch (err) {
+        if (lastError) throw lastError;
+        throw err;
+      }
+    }
+
+    function updateDashboard() {
+      const categoryEl = document.getElementById('categoryFilter');
+      const monthEl = document.getElementById('monthSelect');
+      const yearEl = document.getElementById('yearSelect');
+      const timeEl = document.getElementById('timeFilter');
+
+      if (!monthEl || !yearEl || !timeEl) return;
+      if (currentView === 'home') return;
+
+      const selectedCategory = categoryEl.value;
+      const selectedMonth = monthEl.value;
+      const selectedYear = yearEl.value;
+      const selectedTimes = Array.from(timeEl.selectedOptions).map(opt => opt.value).filter(Boolean);
+
+      if (!selectedCategory) {
+        updateTimeFilterAvailability([]);
+        updateScorecards([], []);
+        updateCharts([], []);
+        updateTables([], []);
+        return;
+      }
+
+      const filteredTempBase = filterDataByControls(rawTempData, selectedCategory, selectedMonth, selectedYear, [], true);
+      const filteredHumBase = filterDataByControls(rawHumData, selectedCategory, selectedMonth, selectedYear, [], true);
+
+      updateTimeFilterAvailability([...filteredTempBase, ...filteredHumBase]);
+
+      const filteredTemp = sortByDateTime(
+        filterDataByControls(rawTempData, selectedCategory, selectedMonth, selectedYear, selectedTimes, true)
+      );
+
+      const filteredHum = sortByDateTime(
+        filterDataByControls(rawHumData, selectedCategory, selectedMonth, selectedYear, selectedTimes, true)
+      );
+
+      updateScorecards(filteredTemp, filteredHum);
+      updateCharts(filteredTemp, filteredHum);
+      updateTables(filteredTemp, filteredHum);
+    }
+
+    function filterDataByControls(data, selectedCategory, selectedMonth, selectedYear, selectedTimes = [], requireCategory = true) {
+      let out = Array.isArray(data) ? data.slice() : [];
+
+      if (requireCategory) {
+        out = out.filter(d => String(d.category).trim().toLowerCase() === String(selectedCategory).trim().toLowerCase());
+      }
+
+      out = out.filter(d => {
+        if (d.month != null && d.year != null) {
+          return String(d.month) === String(selectedMonth) && String(d.year) === String(selectedYear);
+        }
+        return true;
+      });
+
+      if (selectedDays.length) {
+        out = out.filter(d => selectedDays.includes(parseInt(d.date, 10)));
+      }
+
+      if (selectedTimes.length) {
+        out = out.filter(d => matchesSelectedTimes(d.time, selectedTimes));
+      }
+
+      return out;
+    }
+
+    function sortByDateTime(arr) {
+      if (!Array.isArray(arr)) return [];
+
+      const keyOf = (d) => {
+        const y = String(d.year ?? '').padStart(4, '0');
+        const m = pad2(parseInt(d.month ?? '0', 10) + 1);
+        const dd = pad2(parseInt(d.date ?? '0', 10));
+        const t = String(d.time ?? '').trim();
+        return `${y}-${m}-${dd} ${t}`;
+      };
+
+      return arr.slice().sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+    }
+
+    function updateTimeFilterAvailability(baseDataBeforeTime) {
+      const timeSelect = document.getElementById('timeFilter');
+      if (!timeSelect) return;
+
+      if (!Array.isArray(baseDataBeforeTime) || baseDataBeforeTime.length === 0) {
+        Array.from(timeSelect.options).forEach(opt => opt.disabled = false);
+        return;
+      }
+
+      const available = new Set(
+        baseDataBeforeTime.map(d => normalizeTimeForFilter(d.time)).filter(Boolean)
+      );
+
+      Array.from(timeSelect.options).forEach(opt => {
+        const isAvailable = available.has(opt.value);
+        opt.disabled = !isAvailable;
+        if (opt.disabled && opt.selected) opt.selected = false;
+      });
+    }
+
+    function updateScorecards(tempData, humData) {
+      const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+      };
+
+      if (!tempData.length) {
+        setText('avgTemp', '... °C');
+        setText('maxTemp', '... °C');
+        setText('minTemp', '... °C');
+      } else {
+        const tempVals = tempData.map(d => Number(d.temp)).filter(v => Number.isFinite(v));
+        setText('avgTemp', tempVals.length ? `${avg(tempVals).toFixed(2)} °C` : '... °C');
+        setText('maxTemp', tempVals.length ? `${Math.max(...tempVals).toFixed(2)} °C` : '... °C');
+        setText('minTemp', tempVals.length ? `${Math.min(...tempVals).toFixed(2)} °C` : '... °C');
+      }
+
+      if (!humData.length) {
+        setText('avgHum', '... %RH');
+        setText('maxHum', '... %RH');
+        setText('minHum', '... %RH');
+      } else {
+        const humVals = humData.map(d => Number(d.hum)).filter(v => Number.isFinite(v));
+        setText('avgHum', humVals.length ? `${avg(humVals).toFixed(2)} %RH` : '... %RH');
+        setText('maxHum', humVals.length ? `${Math.max(...humVals).toFixed(2)} %RH` : '... %RH');
+        setText('minHum', humVals.length ? `${Math.min(...humVals).toFixed(2)} %RH` : '... %RH');
+      }
+    }
+
+    function avg(arr) {
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function setChartEmptyState(tempEmpty, humEmpty) {
+      document.getElementById('tempChartEmpty').style.display = tempEmpty ? 'flex' : 'none';
+      document.getElementById('humChartEmpty').style.display = humEmpty ? 'flex' : 'none';
+    }
+
+    function updateCharts(tempData, humData) {
+      if (!chartTemp || !chartHum) return;
+
+      const selectedCategory = document.getElementById('categoryFilter')?.value || '';
+      const showReferenceLine = isElitechView();
+
+      if (!selectedCategory) {
+        chartTemp.data.labels = [];
+        chartTemp.data.datasets = [];
+        chartTemp.update();
+
+        chartHum.data.labels = [];
+        chartHum.data.datasets = [];
+        chartHum.update();
+
+        setChartEmptyState(false, false);
+        return;
+      }
+
+      if (!Array.isArray(tempData) || tempData.length === 0) {
+        chartTemp.data.labels = [];
+        chartTemp.data.datasets = [];
+        chartTemp.update();
+        setChartEmptyState(true, !humData.length);
+      } else {
+        const tempLabels = tempData.map(d => `${d.date}/${parseInt(d.month, 10) + 1}/${d.year} ${d.time}`);
+        chartTemp.data.labels = tempLabels;
+
+        chartTemp.data.datasets = showReferenceLine
+          ? [
+              {
+                label: 'E+Elektronik',
+                data: tempData.map(d => Number(d.e_elektronik ?? null)),
+                borderColor: '#3498db',
+                fill: false,
+                tension: 0.3
+              },
+              {
+                label: 'Temperature',
+                data: tempData.map(d => Number(d.temp ?? null)),
+                borderColor: '#e74c3c',
+                fill: false,
+                tension: 0.3
+              }
+            ]
+          : [
+              {
+                label: 'Temperature',
+                data: tempData.map(d => Number(d.temp ?? null)),
+                borderColor: '#e74c3c',
+                fill: false,
+                tension: 0.3
+              }
+            ];
+
+        chartTemp.update();
+      }
+
+      if (!Array.isArray(humData) || humData.length === 0) {
+        chartHum.data.labels = [];
+        chartHum.data.datasets = [];
+        chartHum.update();
+        setChartEmptyState(!tempData.length, true);
+      } else {
+        const humLabels = humData.map(d => `${d.date}/${parseInt(d.month, 10) + 1}/${d.year} ${d.time}`);
+        chartHum.data.labels = humLabels;
+
+        chartHum.data.datasets = showReferenceLine
+          ? [
+              {
+                label: 'E+Elektronik',
+                data: humData.map(d => Number(d.e_elektronik ?? null)),
+                borderColor: '#3498db',
+                fill: false,
+                tension: 0.3
+              },
+              {
+                label: 'Humidity',
+                data: humData.map(d => Number(d.hum ?? null)),
+                borderColor: '#2ecc71',
+                fill: false,
+                tension: 0.3
+              }
+            ]
+          : [
+              {
+                label: 'Humidity',
+                data: humData.map(d => Number(d.hum ?? null)),
+                borderColor: '#2ecc71',
+                fill: false,
+                tension: 0.3
+              }
+            ];
+
+        chartHum.update();
+      }
+
+      setChartEmptyState(!tempData.length, !humData.length);
+    }
+
+    function updateTables(tempRows, humRows) {
+      const selectedCategory = document.getElementById('categoryFilter')?.value || '';
+      const tempBody = document.querySelector('#tempTable tbody');
+      const humBody = document.querySelector('#humTable tbody');
+
+      if (!tempBody || !humBody) return;
+
+      tempBody.innerHTML = '';
+      humBody.innerHTML = '';
+
+      const showReferenceCols = isElitechView();
+      const colspan = showReferenceCols ? 6 : 4;
+
+      if (!selectedCategory) {
+        tempBody.innerHTML = `<tr><td colspan="${colspan}">Pilih kategori terlebih dahulu.</td></tr>`;
+        humBody.innerHTML = `<tr><td colspan="${colspan}">Pilih kategori terlebih dahulu.</td></tr>`;
+        return;
+      }
+
+      if (!tempRows.length) {
+        tempBody.innerHTML = `<tr><td colspan="${colspan}">Tidak ada data temperature untuk filter yang dipilih.</td></tr>`;
+      } else {
+        tempRows.forEach(d => {
+          const fullDate = `${d.date}/${parseInt(d.month, 10) + 1}/${d.year}`;
+
+          if (showReferenceCols) {
+            const corr = Number.isFinite(d.correction)
+              ? Number(d.correction).toFixed(2)
+              : (
+                  Number.isFinite(Number(d.e_elektronik)) && Number.isFinite(Number(d.temp))
+                    ? (Number(d.e_elektronik) - Number(d.temp)).toFixed(2)
+                    : ''
+                );
+
+            tempBody.innerHTML += `
+              <tr>
+                <td>${fullDate}</td>
+                <td>${d.time ?? ''}</td>
+                <td>${d.category ?? ''}</td>
+                <td>${d.e_elektronik ?? ''}</td>
+                <td>${d.temp ?? ''}</td>
+                <td>${corr}</td>
+              </tr>
+            `;
+          } else {
+            tempBody.innerHTML += `
+              <tr>
+                <td>${fullDate}</td>
+                <td>${d.time ?? ''}</td>
+                <td>${d.category ?? ''}</td>
+                <td>${d.temp ?? ''}</td>
+              </tr>
+            `;
+          }
+        });
+      }
+
+      if (!humRows.length) {
+        humBody.innerHTML = `<tr><td colspan="${colspan}">Tidak ada data humidity untuk filter yang dipilih.</td></tr>`;
+      } else {
+        humRows.forEach(d => {
+          const fullDate = `${d.date}/${parseInt(d.month, 10) + 1}/${d.year}`;
+
+          if (showReferenceCols) {
+            const corr = Number.isFinite(d.correction)
+              ? Number(d.correction).toFixed(2)
+              : (
+                  Number.isFinite(Number(d.e_elektronik)) && Number.isFinite(Number(d.hum))
+                    ? (Number(d.e_elektronik) - Number(d.hum)).toFixed(2)
+                    : ''
+                );
+
+            humBody.innerHTML += `
+              <tr>
+                <td>${fullDate}</td>
+                <td>${d.time ?? ''}</td>
+                <td>${d.category ?? ''}</td>
+                <td>${d.e_elektronik ?? ''}</td>
+                <td>${d.hum ?? ''}</td>
+                <td>${corr}</td>
+              </tr>
+            `;
+          } else {
+            humBody.innerHTML += `
+              <tr>
+                <td>${fullDate}</td>
+                <td>${d.time ?? ''}</td>
+                <td>${d.category ?? ''}</td>
+                <td>${d.hum ?? ''}</td>
+              </tr>
+            `;
+          }
+        });
+      }
+    }
+
+    function openGoogleSheetTemp() {
+      const cfg = getCurrentConfig();
+      if (!cfg) {
+        alert('Halaman data belum dipilih.');
+        return;
+      }
+      window.open(cfg.tempUrl, '_blank');
+    }
+
+    function openGoogleSheetHum() {
+      const cfg = getCurrentConfig();
+      if (!cfg) {
+        alert('Halaman data belum dipilih.');
+        return;
+      }
+      window.open(cfg.humUrl, '_blank');
+    }
+
+    function extractSpreadsheetId(sheetUrl) {
+      const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      return match ? match[1] : null;
+    }
+
+    function extractGvizJson(text) {
+      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);?\s*$/);
+      if (match && match[1]) return match[1];
+
+      const first = text.indexOf('{');
+      const last = text.lastIndexOf('}');
+      if (first >= 0 && last >= 0 && last > first) {
+        return text.slice(first, last + 1);
+      }
+
+      throw new Error('Unable to parse GViz response');
+    }
+
+    async function fetchGoogleSheetRows(sheetUrl, options = {}) {
+      const {
+        type = 'temp',
+        sheet = null,
+        gid = null,
+        headers = 1,
+        defaultCategory = null
+      } = options;
+
+      const spreadsheetId = extractSpreadsheetId(sheetUrl);
+      if (!spreadsheetId) return [];
+
+      const params = new URLSearchParams();
+      params.set('tqx', 'out:json');
+      params.set('headers', String(headers));
+
+      if (sheet) params.set('sheet', sheet);
+      else if (gid != null) params.set('gid', String(gid));
+
+      const gvizUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?${params.toString()}`;
+      const response = await fetch(gvizUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sheet data (${response.status})`);
+      }
+
+      const text = await response.text();
+      const jsonText = extractGvizJson(text);
+      const json = JSON.parse(jsonText);
+
+      return parseGvizTable(json, { type, defaultCategory });
+    }
+
+    function normalizeTimeToHHMMSS(value, formattedValue = '') {
+      if (value == null || value === '') return '';
+
+      if (typeof value === 'string') {
+        const m = value.match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)$/);
+        if (m) {
+          const hh = String(m[4]).padStart(2, '0');
+          const mm = String(m[5]).padStart(2, '0');
+          const ss = String(m[6]).padStart(2, '0');
+          return `${hh}:${mm}:${ss}`;
+        }
+      }
+
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        const totalSeconds = Math.round(value * 24 * 60 * 60);
+        const hh = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const mm = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        const ss = String(totalSeconds % 60).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+      }
+
+      const s = String(value).trim();
+
+      if (s.includes('.') && !s.includes(':')) {
+        const [h, m = '00', sec = '00'] = s.split('.');
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      }
+
+      if (s.includes(':')) {
+        const parts = s.split(':').map(x => x.trim());
+        const hh = String(parts[0] || '00').padStart(2, '0');
+        const mm = String(parts[1] || '00').padStart(2, '0');
+        const ss = String(parts[2] || '00').padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+      }
+
+      if (formattedValue) return normalizeTimeToHHMMSS(String(formattedValue).trim(), '');
+      if (/^\d{1,2}$/.test(s)) return `${s.padStart(2, '0')}:00:00`;
+
+      return '';
+    }
+
+    function normalizeDateParts(value, formattedValue = '') {
+      if (value == null || value === '') return null;
+
+      if (typeof value === 'string') {
+        const m = value.match(/^Date\((\d+),(\d+),(\d+)\)$/);
+        if (m) {
+          return {
+            date: String(parseInt(m[3], 10)),
+            month: String(parseInt(m[2], 10)),
+            year: String(parseInt(m[1], 10))
+          };
+        }
+      }
+
+      const tryParse = (x) => {
+        const d = new Date(x);
+        if (!Number.isNaN(d.getTime())) {
+          return {
+            date: String(d.getDate()),
+            month: String(d.getMonth()),
+            year: String(d.getFullYear())
+          };
+        }
+        return null;
+      };
+
+      const parsed = tryParse(value);
+      if (parsed) return parsed;
+
+      if (formattedValue) {
+        const s = String(formattedValue).trim();
+        const m2 = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+        if (m2) {
+          const dd = parseInt(m2[1], 10);
+          const mm = parseInt(m2[2], 10) - 1;
+          const yyyy = parseInt(m2[3], 10);
+          return { date: String(dd), month: String(mm), year: String(yyyy) };
+        }
+
+        const parsed2 = tryParse(s);
+        if (parsed2) return parsed2;
+      }
+
+      return null;
+    }
+
+    function safeNumber(v) {
+      if (v == null || v === '') return null;
+      const n = parseFloat(String(v).replace(',', '.'));
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function normalizeCategoryValue(value) {
+      return String(value || '')
+        .replace(/^elitech\s*/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function parseGvizTable(json, { type = 'temp', defaultCategory = null } = {}) {
+      if (!json || !json.table || !Array.isArray(json.table.rows) || !Array.isArray(json.table.cols)) {
+        return [];
+      }
+
+      const normalizeHeader = (h) =>
+        String(h || '')
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, ' ')
+          .replace(/_/g, ' ');
+
+      const rows = json.table.rows.map(row => {
+        const item = {
+          category: defaultCategory ? String(defaultCategory) : '',
+          date: '',
+          month: '',
+          year: '',
+          time: '',
+          e_elektronik: null,
+          temp: null,
+          hum: null,
+          correction: null
+        };
+
+        json.table.cols.forEach((col, idx) => {
+          const label = normalizeHeader(col.label || col.id || '');
+          const cell = row.c ? row.c[idx] : null;
+          const v = cell && cell.v != null ? cell.v : '';
+          const f = cell && cell.f != null ? cell.f : '';
+
+          if (['date', 'tanggal', 'tgl'].includes(label)) {
+            const parts = normalizeDateParts(v, f);
+            if (parts) Object.assign(item, parts);
+
+          } else if (['time', 'jam', 'waktu'].includes(label)) {
+            item.time = normalizeTimeToHHMMSS(v, f);
+
+          } else if (
+            label.includes('elitech') ||
+            label.includes('lokasi') ||
+            label.includes('location') ||
+            label.includes('area') ||
+            label.includes('kode') ||
+            label.includes('code') ||
+            label.includes('ruang') ||
+            label.includes('device') ||
+            label.includes('logger') ||
+            label.includes('point') ||
+            label.includes('unit')
+          ) {
+            item.category = normalizeCategoryValue(v || f || defaultCategory || '');
+
+          } else if (
+            label.includes('e+elektronik') ||
+            label.includes('e elektronik') ||
+            label.includes('e+ elektronik') ||
+            label.includes('eelektronik')
+          ) {
+            item.e_elektronik = safeNumber(v);
+
+          } else if (label.includes('temperature') || label === 'temp' || label.includes('suhu')) {
+            item.temp = safeNumber(v);
+
+          } else if (label.includes('humidity') || label === 'hum' || label.includes('%rh') || label === 'rh') {
+            item.hum = safeNumber(v);
+
+          } else if (label.includes('correction') || label.includes('koreksi')) {
+            item.correction = safeNumber(v);
+          }
+        });
+
+        return item;
+      });
+
+      return rows.filter(item => {
+        const hasBasic = item.date && item.time && item.category;
+
+        if (!hasBasic) return false;
+
+        if (type === 'temp') {
+          return item.e_elektronik != null || item.temp != null || item.correction != null;
+        }
+
+        return item.e_elektronik != null || item.hum != null || item.correction != null;
+      });
+    }
+
+    async function exportToExcel() {
+      if (currentView === 'home') {
+        alert('Masuk ke halaman data terlebih dahulu sebelum mengekspor.');
+        return;
+      }
+
+      const selectedCategory = document.getElementById('categoryFilter').value;
+      if (!selectedCategory) {
+        alert('Silakan pilih kategori terlebih dahulu sebelum mengekspor data.');
+        return;
+      }
+
+      const selectedMonth = document.getElementById('monthSelect').value;
+      const selectedYear = document.getElementById('yearSelect').value;
+      const selectedTimes = Array.from(document.getElementById('timeFilter').selectedOptions)
+        .map(opt => opt.value)
+        .filter(Boolean);
+
+      const tempRows = sortByDateTime(
+        filterDataByControls(rawTempData, selectedCategory, selectedMonth, selectedYear, selectedTimes, true)
+      );
+
+      const humRows = sortByDateTime(
+        filterDataByControls(rawHumData, selectedCategory, selectedMonth, selectedYear, selectedTimes, true)
+      );
+
+      if (!tempRows.length && !humRows.length) {
+        alert('Tidak ada data untuk filter yang dipilih.');
+        return;
+      }
+
+      const cfg = getCurrentConfig();
+      const workbook = XLSX.utils.book_new();
+      const showReferenceCols = isElitechView();
+
+      if (tempRows.length) {
+        const tempSheetData = showReferenceCols
+          ? tempRows.map(row => ({
+              Date: `${row.date}/${parseInt(row.month, 10) + 1}/${row.year}`,
+              Time: row.time,
+              Kategori: row.category,
+              'E+Elektronik': row.e_elektronik ?? '',
+              Temperature: row.temp ?? '',
+              Correction: row.correction ?? (
+                Number.isFinite(Number(row.e_elektronik)) && Number.isFinite(Number(row.temp))
+                  ? Number(row.e_elektronik) - Number(row.temp)
+                  : ''
+              )
+            }))
+          : tempRows.map(row => ({
+              Date: `${row.date}/${parseInt(row.month, 10) + 1}/${row.year}`,
+              Time: row.time,
+              Kategori: row.category,
+              Temperature: row.temp ?? ''
+            }));
+
+        const wsTemp = XLSX.utils.json_to_sheet(tempSheetData);
+        XLSX.utils.book_append_sheet(workbook, wsTemp, `Summary Temp`);
+      }
+
+      if (humRows.length) {
+        const humSheetData = showReferenceCols
+          ? humRows.map(row => ({
+              Date: `${row.date}/${parseInt(row.month, 10) + 1}/${row.year}`,
+              Time: row.time,
+              Kategori: row.category,
+              'E+Elektronik': row.e_elektronik ?? '',
+              Humidity: row.hum ?? '',
+              Correction: row.correction ?? (
+                Number.isFinite(Number(row.e_elektronik)) && Number.isFinite(Number(row.hum))
+                  ? Number(row.e_elektronik) - Number(row.hum)
+                  : ''
+              )
+            }))
+          : humRows.map(row => ({
+              Date: `${row.date}/${parseInt(row.month, 10) + 1}/${row.year}`,
+              Time: row.time,
+              Kategori: row.category,
+              Humidity: row.hum ?? ''
+            }));
+
+        const wsHum = XLSX.utils.json_to_sheet(humSheetData);
+        XLSX.utils.book_append_sheet(workbook, wsHum, `Summary Hum`);
+      }
+
+      const safePage = cfg.pageTitle.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+      const safeCategory = String(selectedCategory).replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+      XLSX.writeFile(workbook, `${safePage}-${safeCategory}-Data-Export.xlsx`);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCharts();
+      initCalendar();
+      switchView('home');
+    });
+  </script>
+</body>
+</html>
